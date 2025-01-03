@@ -1,5 +1,7 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
+import { get } from 'https';
+
 
 // #region const
 // For the purposes of this tutorial, we'll hardcode our example data.
@@ -74,9 +76,13 @@ const resolvers = {
     },
     Mutation: {
         downloadFiles: async (parent, { files }, context) => {
-            files.forEach((file) => {
+            files.forEach(async (file) => {
                 console.log(`Fetching file: ${file.url}`);
-                // Simulate file fetching
+                try {
+                    await fetchFile(file.url);
+                } catch (error) {
+                    console.error(error);
+                }
             });
             return true;
         },
@@ -94,6 +100,29 @@ const resolvers = {
 // //         });
 // //         return true;
 // //     });
+
+// Define the fetch function
+const fetchFile = (url: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        get(url, (response) => {
+            if (response.statusCode !== 200) {
+                reject(new Error(`Failed to fetch ${url}: ${response.statusMessage}`));
+                return;
+            }
+            response.on('data', (chunk) => {
+                // Process the chunk if needed
+            });
+            response.on('end', () => {
+                console.log(`Successfully fetched ${url}`);
+                resolve();
+            });
+        }).on('error', (error) => {
+            reject(error);
+        });
+    });
+};
+
+
 
 // The ApolloServer constructor requires two parameters: your schema
 // definition and your set of resolvers.
